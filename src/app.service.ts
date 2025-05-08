@@ -5,13 +5,10 @@ import { ClientProxy, Ctx, MessagePattern, Payload, RmqContext } from '@nestjs/m
 export class AppService {
   constructor(@Inject("TEST_SERVICE") private client: ClientProxy) {}
 
-  async test(data: { to: string; subject: string; body: string}) {
-    return await this.client.emit("what", data);
-  }
-
-  @MessagePattern("what")
-  getNotifications(@Payload() data: any, @Ctx() context: RmqContext) {
-    console.log(`Pattern: ${context.getPattern()}`);
-    console.log(data);
+  async test() {
+    for (let i = 0; i < 100; i++) {
+      this.client.emit("rabbitMQ", { Id: i });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   }
 }
