@@ -1,21 +1,36 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Controller, InternalServerErrorException, Post } from '@nestjs/common';
 import { AppService } from './app.service';
-import { Ctx, EventPattern, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
+import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
   
   @EventPattern("rabbitMQ")
-  async rabbitMQ(@Payload() data: any) {
-    console.log(`처리 시작: ${data.Id}`);
-    await new Promise((resolve) => setTimeout(resolve, 100)); 
-    console.log(`처리 끝: ${data.Id}`);
+  async rabbitMQ(@Payload() data: any, @Ctx() context: RmqContext) {
+    try {
+      const channel = context.getChannelRef();
+      const originalMsg = context.getMessage();
+
+      await this.appService.addQueue(data);
+      channel.ack(originalMsg);
+    } catch(err) {
+      console.log(err);
+    }
   }
   
   @Post("/")
-  async test() {
-    this.appService.test();
-    return { message: "성공적으로 요청이 큐에 추가되었습니다" };
+  async sendRequestToMQ() {
+    try {
+      this.appService.sendRequestToMQ();
+    } catch(err) {
+      console.log(err);
+      throw new InternalServerErrorException();
+    }
+  }
+
+  @Post("/queue")
+  async getQueue() {
+    return this.appService.getQueue();
   }
 }

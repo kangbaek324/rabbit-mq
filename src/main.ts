@@ -14,10 +14,11 @@ async function bootstrap() {
         durable: true,
       },
       prefetchCount: 1,
+      noAck: false
     },
   });
 
   await app.startAllMicroservices();
-  await app.listen(3000);
+  await app.listen(3001);
 }
 bootstrap();
